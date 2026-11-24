@@ -1,79 +1,140 @@
 
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Option Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mid-Cycle Option Calculator</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#101827;color:#fff;font-family:Arial,sans-serif;padding:16px}
-.container{max-width:650px;margin:auto}
-h2{color:#35d39a;text-align:center}
-.card{background:#1d293b;padding:16px;border-radius:12px;margin:14px 0}
-label{display:block;margin-top:12px;color:#cbd5e1}
-input,select{width:100%;padding:12px;margin-top:6px;border:1px solid #475569;border-radius:8px;background:#101827;color:white;font-size:16px}
-button{width:100%;padding:14px;margin-top:18px;background:#16a36a;color:white;border:0;border-radius:8px;font-size:17px;font-weight:bold}
-.note{color:#facc15;font-size:13px;line-height:1.5}
+body{margin:0;background:#101827;color:white;font-family:Arial;padding:14px}
+main{max-width:850px;margin:auto}
+h2{text-align:center;color:#35d39a}
+.card{background:#1d293b;padding:15px;border-radius:12px;margin:12px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:13px;color:#cbd5e1;margin-top:10px}
+input,select{width:100%;padding:11px;margin-top:5px;border-radius:7px;border:1px solid #475569;background:#101827;color:white;font-size:15px}
+button{width:100%;padding:14px;background:#16a36a;color:white;border:0;border-radius:8px;font-weight:bold;font-size:16px;margin-top:16px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:590px;font-size:13px}
+th,td{padding:10px 7px;text-align:right;border-bottom:1px solid #39465a;white-space:nowrap}
+th{color:#35d39a}
+th:first-child,td:first-child{text-align:left}
+.atm{background:#263d50}
+.best{background:#174b3a}
+.note{font-size:12px;color:#facc15;line-height:1.5}
+.small{font-size:12px;color:#94a3b8}
 </style>
 </head>
 <body>
-<div class="container">
-<h2>📈 OPTION CALCULATOR</h2>
+<main>
+<h2>📈 MID-CYCLE OPTION CALCULATOR</h2>
+
 <div class="card">
-<h3>Trade Details</h3>
-<label>Stock Name</label>
-<input id="stock" placeholder="Example: RELIANCE">
-<label>Spot Price (₹)</label>
-<input id="spot" type="number" placeholder="Enter spot price">
-<label>Strike Price (₹)</label>
-<input id="strike" type="number" placeholder="Enter strike price">
-<label>Option Type</label>
-<select id="type">
-<option value="CE">CALL (CE)</option>
-<option value="PE">PUT (PE)</option>
-</select>
-<label>Today's Option Premium (₹)</label>
-<input id="premium" type="number" placeholder="Enter premium">
-<label>Expected Stock Move (%)</label>
-<input id="move" type="number" value="5">
-<label>Days Until Cycle End</label>
-<input id="days" type="number" value="15">
-<button onclick="calculate()">CALCULATE</button>
+<h3>Market & Trade Details</h3>
+<div class="grid">
+<div><label>Stock Name</label><input id="stock" placeholder="RELIANCE"></div>
+<div><label>Spot Price (₹)</label><input id="spot" type="number" placeholder="1500"></div>
+<div><label>Expiry Days Remaining</label><input id="expiry" type="number" value="30"></div>
+<div><label>Cycle-End Days</label><input id="cycle" type="number" value="15"></div>
+<div><label>ATM Implied Volatility (%)</label><input id="iv" type="number" value="25"></div>
+<div><label>Risk-Free Rate (%)</label><input id="rate" type="number" value="6.5"></div>
+<div><label>Expected Stock Move (%)</label><input id="move" type="number" value="5"></div>
+<div><label>Expected Direction</label>
+<select id="direction"><option value="up">UP ↑</option><option value="down">DOWN ↓</option></select></div>
+<div><label>Strike Interval (₹)</label><input id="step" type="number" value="10"></div>
+<div><label>Lot Size</label><input id="lot" type="number" value="250"></div>
+<div><label>Option Type</label>
+<select id="type"><option value="CE">CALL (CE)</option><option value="PE">PUT (PE)</option></select></div>
+<div><label>Strikes Each Side</label>
+<select id="count"><option value="5">5</option><option value="7">7</option><option value="10">10</option></select></div>
 </div>
-<div class="card" id="result">
-<h3>Calculation Result</h3>
-<p>Enter details and press Calculate.</p>
+<button onclick="calculate()">CALCULATE STRIKE LADDER</button>
 </div>
-<p class="note">Note: This is an initial calculator demo. Results are estimates, not live NSE or Upstox prices. Live market data and option pricing model will be added in the next stages.</p>
+
+<div class="card" id="summary">
+<h3>Calculation Summary</h3>
+<p>Enter market details and calculate.</p>
 </div>
+
+<div class="card">
+<h3>Strike Price Comparison</h3>
+<div class="tablewrap">
+<table>
+<thead><tr>
+<th>Strike</th><th>Position</th><th>Today ₹</th>
+<th>Cycle-End ₹</th><th>Change/Lot ₹</th><th>Move %</th>
+</tr></thead>
+<tbody id="results">
+<tr><td colspan="6">Results will appear here.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<p class="note">Important: Theoretical estimates using Black-Scholes. Assumes unchanged IV and interest rate. Actual option prices may differ due to volatility, liquidity, dividends and market conditions. This version does not fetch live NSE or Upstox data.</p>
+</main>
+
 <script>
+function cdf(x){
+let a=Math.abs(x),t=1/(1+0.2316419*a);
+let d=0.3989422804*Math.exp(-a*a/2);
+let p=1-d*t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));
+return x>=0?p:1-p;
+}
+function bs(S,K,T,r,v,type){
+if(T<=0){
+return type==="CE"?Math.max(S-K,0):Math.max(K-S,0);
+}
+if(v<=0)return type==="CE"?Math.max(S-K,0):Math.max(K-S,0);
+let d1=(Math.log(S/K)+(r+v*v/2)*T)/(v*Math.sqrt(T));
+let d2=d1-v*Math.sqrt(T);
+if(type==="CE")return S*cdf(d1)-K*Math.exp(-r*T)*cdf(d2);
+return K*Math.exp(-r*T)*cdf(-d2)-S*cdf(-d1);
+}
 function calculate(){
-let spot=Number(document.getElementById('spot').value);
-let strike=Number(document.getElementById('strike').value);
-let premium=Number(document.getElementById('premium').value);
-let move=Number(document.getElementById('move').value);
-let days=Number(document.getElementById('days').value);
-let type=document.getElementById('type').value;
-if(!spot||!strike||!premium||days<0){
-alert("Please enter valid details");
+let stock=document.getElementById("stock").value||"Stock";
+let S=Number(document.getElementById("spot").value);
+let expiry=Number(document.getElementById("expiry").value);
+let cycle=Number(document.getElementById("cycle").value);
+let iv=Number(document.getElementById("iv").value)/100;
+let r=Number(document.getElementById("rate").value)/100;
+let move=Number(document.getElementById("move").value)/100;
+let step=Number(document.getElementById("step").value);
+let lot=Number(document.getElementById("lot").value);
+let type=document.getElementById("type").value;
+let count=Number(document.getElementById("count").value);
+if(!S||!step||!lot||expiry<=0||cycle<0||cycle>expiry||iv<=0){
+alert("Please enter valid market details. Cycle days must not exceed expiry days.");
 return;
 }
-let future=spot*(1+move/100);
-let intrinsic=type==="CE"?Math.max(future-strike,0):Math.max(strike-future,0);
-let todayIntrinsic=type==="CE"?Math.max(spot-strike,0):Math.max(strike-spot,0);
-let estimated=premium+intrinsic-todayIntrinsic;
-estimated=Math.max(estimated,0);
-let change=estimated-premium;
-document.getElementById('result').innerHTML=
-"<h3>Calculation Result</h3>"+
-"<p>Stock: "+document.getElementById('stock').value+"</p>"+
-"<p>Estimated Future Spot: ₹"+future.toFixed(2)+"</p>"+
-"<p>Today's Premium: ₹"+premium.toFixed(2)+"</p>"+
-"<p>Estimated Cycle-End Premium: ₹"+estimated.toFixed(2)+"</p>"+
-"<p>Change per unit: ₹"+change.toFixed(2)+"</p>"+
-"<p>Move: "+(change/premium*100).toFixed(2)+"%</p>"+
-"<p>Days to cycle end: "+days+"</p>";
+let futureS=S*(document.getElementById("direction").value==="up"?1+move:1-move);
+let atm=Math.round(S/step)*step;
+let rows=[];
+for(let i=-count;i<=count;i++){
+let K=atm+i*step;
+let today=bs(S,K,expiry/365,r,iv,type);
+let future=bs(futureS,K,(expiry-cycle)/365,r,iv,type);
+let change=future-today;
+let pct=today>0?(change/today)*100:0;
+let position=K===atm?"ATM":(type==="CE"?(K<S?"ITM":"OTM"):(K>S?"ITM":"OTM"));
+rows.push({K,today,future,change,pct,position});
+}
+let best=rows.reduce((a,b)=>b.pct>a.pct?b:a,rows[0]);
+document.getElementById("summary").innerHTML=
+"<h3>Calculation Summary</h3>"+
+"<p>Stock: <b>"+stock+"</b></p>"+
+"<p>Current Spot: ₹"+S.toFixed(2)+"</p>"+
+"<p>Projected Cycle-End Spot: ₹"+futureS.toFixed(2)+"</p>"+
+"<p>ATM Strike: ₹"+atm+"</p>"+
+"<p>Best estimated move: <b>"+best.K+" — "+best.pct.toFixed(2)+"%</b></p>";
+document.getElementById("results").innerHTML=rows.map(x=>
+"<tr class='"+(x.K===atm?"atm ":"")+(x.K===best.K?"best":"")+"'>"+
+"<td>"+x.K+"</td><td>"+x.position+"</td>"+
+"<td>"+x.today.toFixed(2)+"</td>"+
+"<td>"+x.future.toFixed(2)+"</td>"+
+"<td>"+(x.change*lot).toFixed(2)+"</td>"+
+"<td>"+x.pct.toFixed(2)+"%</td></tr>"
+).join("");
 }
 </script>
 </body>
