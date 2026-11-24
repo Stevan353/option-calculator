@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Option Calculator</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#fff;font-family:Arial,sans-serif;padding:16px}
+.container{max-width:650px;margin:auto}
+h2{color:#35d39a;text-align:center}
+.card{background:#1d293b;padding:16px;border-radius:12px;margin:14px 0}
+label{display:block;margin-top:12px;color:#cbd5e1}
+input,select{width:100%;padding:12px;margin-top:6px;border:1px solid #475569;border-radius:8px;background:#101827;color:white;font-size:16px}
+button{width:100%;padding:14px;margin-top:18px;background:#16a36a;color:white;border:0;border-radius:8px;font-size:17px;font-weight:bold}
+.note{color:#facc15;font-size:13px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>📈 OPTION CALCULATOR</h2>
+<div class="card">
+<h3>Trade Details</h3>
+<label>Stock Name</label>
+<input id="stock" placeholder="Example: RELIANCE">
+<label>Spot Price (₹)</label>
+<input id="spot" type="number" placeholder="Enter spot price">
+<label>Strike Price (₹)</label>
+<input id="strike" type="number" placeholder="Enter strike price">
+<label>Option Type</label>
+<select id="type">
+<option value="CE">CALL (CE)</option>
+<option value="PE">PUT (PE)</option>
+</select>
+<label>Today's Option Premium (₹)</label>
+<input id="premium" type="number" placeholder="Enter premium">
+<label>Expected Stock Move (%)</label>
+<input id="move" type="number" value="5">
+<label>Days Until Cycle End</label>
+<input id="days" type="number" value="15">
+<button onclick="calculate()">CALCULATE</button>
+</div>
+<div class="card" id="result">
+<h3>Calculation Result</h3>
+<p>Enter details and press Calculate.</p>
+</div>
+<p class="note">Note: This is an initial calculator demo. Results are estimates, not live NSE or Upstox prices. Live market data and option pricing model will be added in the next stages.</p>
+</div>
+<script>
+function calculate(){
+let spot=Number(document.getElementById('spot').value);
+let strike=Number(document.getElementById('strike').value);
+let premium=Number(document.getElementById('premium').value);
+let move=Number(document.getElementById('move').value);
+let days=Number(document.getElementById('days').value);
+let type=document.getElementById('type').value;
+if(!spot||!strike||!premium||days<0){
+alert("Please enter valid details");
+return;
+}
+let future=spot*(1+move/100);
+let intrinsic=type==="CE"?Math.max(future-strike,0):Math.max(strike-future,0);
+let todayIntrinsic=type==="CE"?Math.max(spot-strike,0):Math.max(strike-spot,0);
+let estimated=premium+intrinsic-todayIntrinsic;
+estimated=Math.max(estimated,0);
+let change=estimated-premium;
+document.getElementById('result').innerHTML=
+"<h3>Calculation Result</h3>"+
+"<p>Stock: "+document.getElementById('stock').value+"</p>"+
+"<p>Estimated Future Spot: ₹"+future.toFixed(2)+"</p>"+
+"<p>Today's Premium: ₹"+premium.toFixed(2)+"</p>"+
+"<p>Estimated Cycle-End Premium: ₹"+estimated.toFixed(2)+"</p>"+
+"<p>Change per unit: ₹"+change.toFixed(2)+"</p>"+
+"<p>Move: "+(change/premium*100).toFixed(2)+"%</p>"+
+"<p>Days to cycle end: "+days+"</p>";
+}
+</script>
+</body>
+</html>
